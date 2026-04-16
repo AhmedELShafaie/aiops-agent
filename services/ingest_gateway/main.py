@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from collections import defaultdict
 from datetime import datetime, timezone
+from threading import Lock
 
 from fastapi import Depends, FastAPI, Header, HTTPException
 from redis.asyncio import Redis
@@ -20,6 +21,7 @@ from services.ingest_gateway.adapters import (
 
 app = FastAPI(title="ingest-gateway", version="0.1.0")
 _rate_cache: dict[str, list[int]] = defaultdict(list)
+_rate_cache_lock = Lock()
 
 
 @app.on_event("startup")
@@ -46,11 +48,12 @@ def get_audit_engine() -> AsyncEngine:
 def check_rate_limit(client_id: str, settings: Settings) -> None:
     now = int(datetime.now(timezone.utc).timestamp())
     window_start = now - 60
-    bucket = [ts for ts in _rate_cache[client_id] if ts >= window_start]
-    if len(bucket) >= settings.ingest_rate_limit_per_minute:
-        raise HTTPException(status_code=429, detail="Rate limit exceeded")
-    bucket.append(now)
-    _rate_cache[client_id] = bucket
+    with _rate_cache_lock:
+        bucket = [ts for ts in _rate_cache[client_id] if ts >= window_start]
+        if len(bucket) >= settings.ingest_rate_limit_per_minute:
+            raise HTTPException(status_code=429, detail="Rate limit exceeded")
+        bucket.append(now)
+        _rate_cache[client_id] = bucket
 
 
 async def check_idempotency(redis: Redis, event: TelemetryEvent) -> None:
