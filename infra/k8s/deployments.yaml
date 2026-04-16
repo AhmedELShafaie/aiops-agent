@@ -84,6 +84,13 @@ spec:
                 name: aiops-config
             - secretRef:
                 name: aiops-secrets
+          livenessProbe:
+            exec:
+              command: ["sh", "-c", "ps -ef | grep '[p]ython -m services.correlation_engine.worker' >/dev/null"]
+            initialDelaySeconds: 20
+            periodSeconds: 30
+            timeoutSeconds: 5
+            failureThreshold: 3
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -109,6 +116,13 @@ spec:
                 name: aiops-config
             - secretRef:
                 name: aiops-secrets
+          livenessProbe:
+            exec:
+              command: ["sh", "-c", "ps -ef | grep '[p]ython -m services.recommendation_engine.worker' >/dev/null"]
+            initialDelaySeconds: 20
+            periodSeconds: 30
+            timeoutSeconds: 5
+            failureThreshold: 3
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -134,3 +148,10 @@ spec:
                 name: aiops-config
             - secretRef:
                 name: aiops-secrets
+          livenessProbe:
+            exec:
+              command: ["sh", "-c", "ps -ef | grep '[p]ython -m services.runbook_executor.worker' >/dev/null"]
+            initialDelaySeconds: 20
+            periodSeconds: 30
+            timeoutSeconds: 5
+            failureThreshold: 3

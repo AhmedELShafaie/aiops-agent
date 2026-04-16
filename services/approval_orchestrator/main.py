@@ -47,7 +47,11 @@ def get_audit_engine() -> AsyncEngine:
 def _verify_slack_signature(body: bytes, timestamp: str, signature: str, secret: str) -> bool:
     if not secret:
         return True
-    if abs(time() - int(timestamp)) > 60 * 5:
+    try:
+        timestamp_value = int(timestamp)
+    except (TypeError, ValueError):
+        return False
+    if abs(time() - timestamp_value) > 60 * 5:
         return False
     basestring = f"v0:{timestamp}:{body.decode('utf-8')}"
     expected = "v0=" + hmac.new(secret.encode(), basestring.encode(), hashlib.sha256).hexdigest()
