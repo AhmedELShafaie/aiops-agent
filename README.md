@@ -31,6 +31,15 @@ Self-hosted, human-approved AIOps control plane for monitoring 100-1,000 servers
    - `uvicorn services.audit_log.main:app --port 8006 --reload`
    - `uvicorn apps.ops_dashboard.main:app --port 8080 --reload`
 
+## Tests (Python 3.11 via Docker)
+
+- Run unit tests (auto-selects Docker when available, otherwise local Python):
+  - `make test`
+- Force Docker-based test run:
+  - `docker compose run --rm unit-tests`
+- Force local test run (requires Python 3.11+):
+  - `make test-local`
+
 ## Pipeline
 
 1. Mixed-source telemetry enters `ingest_gateway`.
