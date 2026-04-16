@@ -68,6 +68,8 @@ class Incident(BaseModel):
     first_seen: datetime = Field(default_factory=utc_now)
     last_seen: datetime = Field(default_factory=utc_now)
     suppression_score: float = 0.0
+    suppression_reasons: list[str] = Field(default_factory=list)
+    correlation_key: str | None = None
     correlated_signals: list[str] = Field(default_factory=list)
     context: dict[str, Any] = Field(default_factory=dict)
 

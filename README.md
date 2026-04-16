@@ -47,6 +47,17 @@ Self-hosted, human-approved AIOps control plane for monitoring 100-1,000 servers
 - Runbook: `docs/staging-rollout-runbook.md`
 - Synthetic event generator: `scripts/send_synthetic_alerts.py`
 
+## Multi-server onboarding
+
+- Central + target server full steps: `docs/target-server-to-central-setup.md`
+- Alertmanager webhook example: `examples/alertmanager/alertmanager.yml`
+- Prometheus scrape example: `examples/prometheus/prometheus.yml`
+- Datadog webhook payload example: `examples/datadog/webhook_payload_example.json`
+- Ansible installer skeleton: `automation/ansible/install-node-exporter.yml`
+- Secure Nginx ingress guide: `docs/central-nginx-secure-ingress.md`
+- Nginx config + optional HMAC lua: `infra/nginx/aiops-central.conf`, `infra/nginx/hmac_access.lua`
+- Signed request test helper: `scripts/sign_ingest_request.py`
+
 ## Production hardening included
 
 - Rate limiting and idempotency keys on ingestion.

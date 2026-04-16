@@ -1,0 +1,80 @@
+---
+- name: Install node_exporter on target servers
+  hosts: targets
+  become: true
+  vars:
+    node_exporter_version: "1.9.1"
+    node_exporter_archive: "node_exporter-{{ node_exporter_version }}.linux-amd64.tar.gz"
+    node_exporter_url: "https://github.com/prometheus/node_exporter/releases/download/v{{ node_exporter_version }}/{{ node_exporter_archive }}"
+
+  tasks:
+    - name: Ensure required packages are present
+      package:
+        name:
+          - curl
+          - tar
+        state: present
+
+    - name: Create node_exporter group
+      group:
+        name: node_exporter
+        state: present
+
+    - name: Create node_exporter user
+      user:
+        name: node_exporter
+        group: node_exporter
+        shell: /sbin/nologin
+        create_home: false
+        state: present
+
+    - name: Download node_exporter archive
+      get_url:
+        url: "{{ node_exporter_url }}"
+        dest: "/tmp/{{ node_exporter_archive }}"
+        mode: "0644"
+
+    - name: Extract node_exporter archive
+      unarchive:
+        src: "/tmp/{{ node_exporter_archive }}"
+        dest: /tmp
+        remote_src: true
+
+    - name: Install node_exporter binary
+      copy:
+        src: "/tmp/node_exporter-{{ node_exporter_version }}.linux-amd64/node_exporter"
+        dest: /usr/local/bin/node_exporter
+        owner: root
+        group: root
+        mode: "0755"
+        remote_src: true
+
+    - name: Install systemd service
+      copy:
+        dest: /etc/systemd/system/node_exporter.service
+        mode: "0644"
+        content: |
+          [Unit]
+          Description=Node Exporter
+          After=network-online.target
+          Wants=network-online.target
+
+          [Service]
+          User=node_exporter
+          Group=node_exporter
+          ExecStart=/usr/local/bin/node_exporter --web.listen-address=:9100
+          Restart=always
+          RestartSec=5
+
+          [Install]
+          WantedBy=multi-user.target
+
+    - name: Reload systemd
+      systemd:
+        daemon_reload: true
+
+    - name: Enable and start node_exporter
+      systemd:
+        name: node_exporter
+        enabled: true
+        state: started

@@ -1,0 +1,13 @@
+{
+  "title": "Host CPU high",
+  "alert_type": "cpu_usage",
+  "priority": "critical",
+  "host": "app-01",
+  "alert_value": 92.4,
+  "threshold": 80.0,
+  "tags": [
+    "env:prod",
+    "team:sre",
+    "host:app-01"
+  ]
+}

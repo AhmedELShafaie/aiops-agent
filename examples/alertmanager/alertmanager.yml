@@ -1,0 +1,15 @@
+global:
+  resolve_timeout: 5m
+
+route:
+  receiver: aiops-webhook
+  group_wait: 15s
+  group_interval: 1m
+  repeat_interval: 30m
+
+receivers:
+  - name: aiops-webhook
+    webhook_configs:
+      - url: https://central-aiops.example.com/ingest/source/prometheus
+        send_resolved: true
+        max_alerts: 100
