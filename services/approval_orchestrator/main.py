@@ -90,7 +90,7 @@ async def decide_recommendation(
         for action in allowed_actions:
             request = RunbookRequest(
                 recommendation_id=recommendation_id,
-                action=ActionType(action),
+                action=action,
                 host=recommendation.metadata.get("host", "unknown-host"),
                 requested_by=decision.approver,
                 parameters={"reason": decision.reason or "approved via api"},

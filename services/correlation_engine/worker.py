@@ -13,9 +13,9 @@ from services.common.aiops_common.schemas import AuditEvent, Incident, Normalize
 async def process_signal(redis, signal: NormalizedSignal, dedup_window_seconds: int) -> Incident | None:
     now = int(datetime.now(timezone.utc).timestamp())
     dedup_key = f"dedup:{signal.fingerprint}"
+    incident_ttl_seconds = dedup_window_seconds * 4
     created = await redis.setnx(dedup_key, str(now))
     if created:
-        await redis.expire(dedup_key, dedup_window_seconds)
         incident = Incident(
             fingerprint=signal.fingerprint,
             host=signal.host,
@@ -25,31 +25,44 @@ async def process_signal(redis, signal: NormalizedSignal, dedup_window_seconds: 
             context={"latest_value": signal.value, "source": signal.source.value},
         )
         incident.suppression_score = suppression_score(incident)
-        await redis.set(
-            f"incident:{incident.incident_id}",
-            incident.model_dump_json(),
-            ex=dedup_window_seconds * 4,
-        )
+        incident_key = f"incident:{incident.incident_id}"
+        await redis.set(incident_key, incident.model_dump_json(), ex=incident_ttl_seconds)
+        # Keep the dedup key for the full incident lifetime so new signals
+        # route to the existing incident instead of creating duplicates.
+        await redis.set(dedup_key, incident.incident_id, ex=incident_ttl_seconds)
         return incident
 
-    incident_ids = await redis.keys("incident:*")
-    if not incident_ids:
+    incident_id = await redis.get(dedup_key)
+    if not incident_id:
+        # Dedup key can become stale across restarts or manual key eviction.
+        # Recreate incident safely and reattach dedup state.
+        incident = Incident(
+            fingerprint=signal.fingerprint,
+            host=signal.host,
+            metric=signal.metric,
+            severity=signal.severity,
+            correlated_signals=[signal.signal_id],
+            context={"latest_value": signal.value, "source": signal.source.value},
+        )
+        incident.suppression_score = suppression_score(incident)
+        incident_key = f"incident:{incident.incident_id}"
+        await redis.set(incident_key, incident.model_dump_json(), ex=incident_ttl_seconds)
+        await redis.set(dedup_key, incident.incident_id, ex=incident_ttl_seconds)
+        return incident
+
+    incident_key = f"incident:{incident_id}"
+    raw = await redis.get(incident_key)
+    if not raw:
         return None
 
-    for key in incident_ids:
-        raw = await redis.get(key)
-        if not raw:
-            continue
-        incident = Incident.model_validate_json(raw)
-        if incident.fingerprint != signal.fingerprint:
-            continue
-        incident.event_count += 1
-        incident.last_seen = datetime.now(timezone.utc)
-        incident.correlated_signals.append(signal.signal_id)
-        incident.suppression_score = suppression_score(incident)
-        await redis.set(key, incident.model_dump_json(), ex=dedup_window_seconds * 4)
-        return incident
-    return None
+    incident = Incident.model_validate_json(raw)
+    incident.event_count += 1
+    incident.last_seen = datetime.now(timezone.utc)
+    incident.correlated_signals.append(signal.signal_id)
+    incident.suppression_score = suppression_score(incident)
+    await redis.set(incident_key, incident.model_dump_json(), ex=incident_ttl_seconds)
+    await redis.expire(dedup_key, incident_ttl_seconds)
+    return incident
 
 
 async def main() -> None:
