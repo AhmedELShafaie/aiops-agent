@@ -1,0 +1,29 @@
+global:
+  image:
+    repository: ghcr.io/example/aiops-agent
+    tag: latest
+  env:
+    ENVIRONMENT: prod
+    DEDUP_WINDOW_SECONDS: 300
+    INGEST_RATE_LIMIT_PER_MINUTE: 1200
+    SUPPRESSION_SCORE_THRESHOLD: 0.60
+    RECOMMENDATION_MIN_CONFIDENCE: 0.70
+
+ingestGateway:
+  replicas: 3
+  servicePort: 80
+  containerPort: 8001
+
+approvalOrchestrator:
+  replicas: 2
+  servicePort: 80
+  containerPort: 8004
+
+correlationEngine:
+  replicas: 2
+
+recommendationEngine:
+  replicas: 2
+
+runbookExecutor:
+  replicas: 1

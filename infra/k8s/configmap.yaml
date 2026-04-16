@@ -1,0 +1,12 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: aiops-config
+  namespace: aiops
+data:
+  ENVIRONMENT: "prod"
+  DEDUP_WINDOW_SECONDS: "300"
+  INGEST_RATE_LIMIT_PER_MINUTE: "1200"
+  SUPPRESSION_SCORE_THRESHOLD: "0.60"
+  RECOMMENDATION_MIN_CONFIDENCE: "0.70"
+  SLACK_APPROVAL_CHANNEL: "#ops-approvals"

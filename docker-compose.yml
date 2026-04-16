@@ -1,0 +1,54 @@
+services:
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    command: ["redis-server", "--appendonly", "yes"]
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+
+  ingest-gateway:
+    image: python:3.11-slim
+    working_dir: /app
+    volumes:
+      - ./:/app
+    env_file:
+      - .env
+    command: bash -lc "pip install -e . && uvicorn services.ingest_gateway.main:app --host 0.0.0.0 --port 8001"
+    depends_on:
+      redis:
+        condition: service_healthy
+    ports:
+      - "8001:8001"
+
+  approval-orchestrator:
+    image: python:3.11-slim
+    working_dir: /app
+    volumes:
+      - ./:/app
+    env_file:
+      - .env
+    command: bash -lc "pip install -e . && uvicorn services.approval_orchestrator.main:app --host 0.0.0.0 --port 8004"
+    depends_on:
+      redis:
+        condition: service_healthy
+    ports:
+      - "8004:8004"
+
+  audit-log:
+    image: python:3.11-slim
+    working_dir: /app
+    volumes:
+      - ./:/app
+    env_file:
+      - .env
+    command: bash -lc "pip install -e . && uvicorn services.audit_log.main:app --host 0.0.0.0 --port 8006"
+    depends_on:
+      redis:
+        condition: service_healthy
+    ports:
+      - "8006:8006"

@@ -1,0 +1,24 @@
+version: 1
+defaultMode: human_approval_required
+rules:
+  - id: low-risk-runbooks
+    when:
+      actionIn:
+        - restart_service
+        - clear_tmp
+        - restart_agent
+      environmentIn:
+        - prod
+        - staging
+    requires:
+      approvals: 1
+      role: sre_oncall
+  - id: high-risk-block
+    when:
+      actionIn:
+        - kernel_patch
+        - network_acl_change
+    requires:
+      approvals: 2
+      role: platform_admin
+      blockByDefault: true
