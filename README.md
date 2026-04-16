@@ -42,6 +42,11 @@ Self-hosted, human-approved AIOps control plane for monitoring 100-1,000 servers
 7. `runbook_executor` performs guarded execution and records outcomes.
 8. All decisions/actions are appended to the audit database and queryable via `audit_log`.
 
+## Staging rollout
+
+- Runbook: `docs/staging-rollout-runbook.md`
+- Synthetic event generator: `scripts/send_synthetic_alerts.py`
+
 ## Production hardening included
 
 - Rate limiting and idempotency keys on ingestion.
